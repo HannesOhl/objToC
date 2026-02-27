@@ -12,6 +12,7 @@
 #include "../assets/asset_teapot.h"
 #include "../assets/asset_airboat.h"
 #include "../assets/asset_humanoid_tri.h"
+#include "../assets/asset_ballermann.h"
 
 #define XMIN 40
 #define YMIN 40
@@ -460,6 +461,15 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera) {
 		M3f mat_rot1 = rot_xz_3f(+angle);
 		M3f mat_rot2 = rot_xz_3f(-angle);
 
+		for (int i = asset_ballermann.f_count - 1; i >= 0; i--) {
+			Triangle t = {
+				.v1 = mul_m3f_v3f(mat_rot1, asset_ballermann.v[asset_ballermann.f[i].x-1]),
+				.v2 = mul_m3f_v3f(mat_rot1, asset_ballermann.v[asset_ballermann.f[i].y-1]),
+				.v3 = mul_m3f_v3f(mat_rot1, asset_ballermann.v[asset_ballermann.f[i].z-1])
+			};
+			triangle_draw(t, buffer, camera, EMERALD);
+		}
+		/*
 		for (int i = asset_teapot.f_count - 1; i >= 0; i--) {
 			Triangle t = {
 				.v1 = mul_m3f_v3f(mat_rot1, asset_teapot.v[asset_teapot.f[i].x-1]),
@@ -496,7 +506,7 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera) {
 			};
 			triangle_draw(t, buffer, camera, ROUGE);
 		}
-
+		*/
 		//triangle_draw(tri1, buffer, camera, EMERALD);
 		//triangle_draw(tri2, buffer, camera, ROUGE);
 		//V3f origin = {{8.0f, 0.0f, 8.0f}};
