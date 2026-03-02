@@ -8,9 +8,11 @@ typedef struct {
 	size_t f_count;
 	V3f v[3644];
 	V3u f[6320];
+	V3f min;
+	V3f max;
 } AssetTeapot;
 
-static const AssetTeapot asset_teapot = {
+static AssetTeapot asset_teapot = {
 	.v_count = 3644,
 	.f_count = 6320,
 	.v = {
@@ -9984,3 +9986,4 @@ static const AssetTeapot asset_teapot = {
 };
 
 #endif /* ASSET_TEAPOT_H */
+

@@ -23,8 +23,9 @@
 
 static const float EPS = 1e-8;
 
-static         size_t lines_count_global    = 0;
-static         size_t triangle_count_global = 0;
+static         size_t lines_count_global    	   = 0;
+static         size_t triangle_count_global 	   = 0;
+static         size_t models_rejected_count_global = 0;
 
 static float* buffer_depth = NULL;
 
@@ -42,12 +43,14 @@ typedef struct {
 	bool grid_on;
 	bool wireframe;
 	bool bfc;
+	bool vfc;
 } State;
 State state = {
 	.flags = 0,
 	.grid_on = true,
 	.wireframe = false,
-	.bfc = false
+	.bfc = false,
+	.vfc = false
 };
 
 typedef struct {
@@ -363,7 +366,7 @@ void time_measure_start(struct timespec* t0) {
 	clock_gettime(CLOCK_MONOTONIC, t0);
 }
 
-double time_measure_end_ms(struct timespec* t1, const struct timespec* t0) {
+double time_measure_end_ms(struct timespec* t1, const struct timespec* t0, size_t* samples_cur, double* t_ms_avg, double* t_ms_avg_rolling, uint32_t* buffer) {
 	clock_gettime(CLOCK_MONOTONIC, t1);
 
 	time_t sec  = t1->tv_sec  - t0->tv_sec;
@@ -373,6 +376,17 @@ double time_measure_end_ms(struct timespec* t1, const struct timespec* t0) {
 		sec-=1;
 		nsec += 1000000000L;
 	}
+	*samples_cur += 1;
+	if (*samples_cur == 256) {
+		*t_ms_avg = *t_ms_avg_rolling / 256.0;
+		*t_ms_avg_rolling = 0;
+		*samples_cur = 0;
+	}
+
+	text_render(string_format("frame time = %.2f ms, FPS = %.2f (256 samples), "
+				  "lines drawn = %zu, triangles drawn = %zu\n",
+				*t_ms_avg, 1000.0 / *t_ms_avg, lines_count_global,
+				triangle_count_global), 0, 0, buffer, GREEN, 2);
 
 	return sec * 1000.0 + nsec / 1e6;
 }
@@ -385,6 +399,12 @@ Triangle triangle_offset(Triangle t, V3f offset) {
 	res.v3 = add_3f(t.v3, offset);
 
 	return res;
+}
+void buffer_depth_max() {
+
+	for (size_t i = 0; i < SCREEN_WIDTH*SCREEN_HEIGHT; i++) {
+		buffer_depth[i] = FLT_MAX;
+	}
 }
 
 void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera) {
@@ -408,6 +428,30 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera) {
 	};
 	(void) tri2;
 
+	// TODO: get bounding box of assets (asset_... .min/.max)
+	float x_min = 0;
+	float x_max = 0;
+	float y_min = 0;
+	float y_max = 0;
+	float z_min = 0;
+	float z_max = 0;
+	for (int i = asset_teapot.v_count - 1; i >= 0; i--) {
+
+		float x = asset_teapot.v[i].x;
+		float y = asset_teapot.v[i].y;
+		float z = asset_teapot.v[i].z;
+
+		if (x < x_min) x_min = x;
+		if (x > x_max) x_max = x;
+		if (y < y_min) y_min = y;
+		if (y > y_max) y_max = y;
+		if (z < z_min) z_min = z;
+		if (z > z_max) z_max = z;
+	}
+	asset_teapot.min = (V3f) {{ .x = x_min, .y = y_min, .z = z_min }};
+	asset_teapot.max = (V3f) {{ .x = x_max, .y = y_max, .z = z_max }};
+
+	bool vfc = true;
 	size_t samples_cur      = 0;
 	double t_ms_avg         = 0;
 	double t_ms_avg_rolling = 0;
@@ -423,6 +467,7 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera) {
 				if (ctx->event.key.keysym.sym == SDLK_g) state.grid_on = !state.grid_on;
 				if (ctx->event.key.keysym.sym == SDLK_w) state.wireframe = !state.wireframe;
 				if (ctx->event.key.keysym.sym == SDLK_b) state.bfc = !state.bfc;
+				if (ctx->event.key.keysym.sym == SDLK_f) state.vfc = !state.vfc;
 				break;
 
 			case SDL_MOUSEMOTION:
@@ -452,7 +497,6 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera) {
 			V3f dir = { .x = camera.forward.x, .y = 0.0f, .z = camera.forward.z };
 			dir = norm_3f(dir);
 			camera.position = sub_3f(camera.position, scal_3f(mv_fac, dir));
-			printf("test\n");
 		}
 		if (keys[SDL_SCANCODE_DOWN]) {
 			V3f dir = { .x = player.forward.x, .y = 0.0f, .z = player.forward.z };
@@ -500,11 +544,11 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera) {
 			triangle_draw(t, buffer, camera, GREEN);
 		}
 */
-		//static float angle = 0.0f;
-		//angle += 0.01;
-		//M3f mat_rot1 = rot_xz_3f(+angle);
+		static float angle = 0.0f;
+		angle += 0.01;
+		M3f mat_rot1 = rot_xz_3f(+angle);
 		//M3f mat_rot2 = rot_xz_3f(-angle);
-
+		/*
 		for (int i = asset_kochmuetze.f_count - 1; i >= 0; i--) {
 			Triangle t = {
 				.v1 = asset_kochmuetze.v[asset_kochmuetze.f[i].x-1],
@@ -524,6 +568,7 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera) {
 			t = triangle_offset(t, player.position);
 			triangle_draw(t, buffer, camera, EMERALD);
 		}
+		*/
 		/*
 		for (int i = asset_kochmuetze.f_count - 1; i >= 0; i--) {
 			Triangle t = {
@@ -534,76 +579,47 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera) {
 			triangle_draw(t, buffer, camera, EMERALD);
 		}
 		*/
-		/*
-		for (int i = asset_teapot.f_count - 1; i >= 0; i--) {
-			Triangle t = {
-				.v1 = mul_m3f_v3f(mat_rot1, asset_teapot.v[asset_teapot.f[i].x-1]),
-				.v2 = mul_m3f_v3f(mat_rot1, asset_teapot.v[asset_teapot.f[i].y-1]),
-				.v3 = mul_m3f_v3f(mat_rot1, asset_teapot.v[asset_teapot.f[i].z-1])
-			};
-			triangle_draw(t, buffer, camera, EMERALD);
-		}
 
-		for (int i = asset_teapot.f_count - 1; i >= 0; i--) {
+		for (size_t x = 0; x < 10; x++) {
+		for (size_t z = 0; z < 10; z++) {
+			V3f offset = { .x = (float) x * 8.0f, .y = 0.0f, .z = (float) z * 8.0f };
+			if (state.vfc) {
+				V3f max = add_3f(asset_teapot.max, offset);
+				V3f min = add_3f(asset_teapot.min, offset);
+				V3f dir = sub_3f(max, camera.position);
+				if (dot_3f(dir, camera.forward) <= 0) {
+					models_rejected_count_global += 1;
+					continue;
+				}
+			}
+			for (int i = asset_teapot.f_count - 1; i >= 0; i--) {
+				Triangle t = {
+					.v1 = mul_m3f_v3f(mat_rot1, asset_teapot.v[asset_teapot.f[i].x-1]),
+					.v2 = mul_m3f_v3f(mat_rot1, asset_teapot.v[asset_teapot.f[i].y-1]),
+					.v3 = mul_m3f_v3f(mat_rot1, asset_teapot.v[asset_teapot.f[i].z-1])
+				};
+				t = triangle_offset(t, offset);
 
-			V3f v1 = {
-				.x = asset_teapot.v[asset_teapot.f[i].x-1].x,
-				.y = asset_teapot.v[asset_teapot.f[i].x-1].y,
-				.z = asset_teapot.v[asset_teapot.f[i].x-1].z + 10
-			};
+				triangle_draw(t, buffer, camera, EMERALD);
+			}
+		}}
 
-			V3f v2 = {
-				.x = asset_teapot.v[asset_teapot.f[i].y-1].x,
-				.y = asset_teapot.v[asset_teapot.f[i].y-1].y,
-				.z = asset_teapot.v[asset_teapot.f[i].y-1].z + 10
-			};
-
-			V3f v3 = {
-				.x = asset_teapot.v[asset_teapot.f[i].z-1].x,
-				.y = asset_teapot.v[asset_teapot.f[i].z-1].y,
-				.z = asset_teapot.v[asset_teapot.f[i].z-1].z + 10
-			};
-
-			Triangle t = {
-				.v1 =mul_m3f_v3f(mat_rot2, v1),
-				.v2 =mul_m3f_v3f(mat_rot2, v2),
-				.v3 =mul_m3f_v3f(mat_rot2, v3)
-			};
-			triangle_draw(t, buffer, camera, ROUGE);
-		}
-		*/
-		//triangle_draw(tri1, buffer, camera, EMERALD);
-		//triangle_draw(tri2, buffer, camera, ROUGE);
-		//V3f origin = {{8.0f, 0.0f, 8.0f}};
-		//cube_draw(origin, 2.0f, buffer, RED, camera);
-
-		for (size_t i = 0; i < SCREEN_WIDTH*SCREEN_HEIGHT; i++) {
-			buffer_depth[i] = FLT_MAX;
-		}
+		buffer_depth_max();
 		SDL_UpdateWindowSurface(ctx->window);
 		buffer_flush(buffer, ctx->bytes_per_pixel);
-		background_render(buffer);
+		//background_render(buffer);
 
 		// end time measuring
-		t_ms_avg_rolling += time_measure_end_ms(&t1, &t0);
-		samples_cur += 1;
-		if (samples_cur == 256) {
-			t_ms_avg = t_ms_avg_rolling / 256.0;
-			t_ms_avg_rolling = 0;
-			samples_cur = 0;
-		}
+		t_ms_avg_rolling += time_measure_end_ms(&t1, &t0, &samples_cur, &t_ms_avg, &t_ms_avg_rolling, buffer);
 
-		text_render(string_format("frame time = %.2f ms, FPS = %.2f (256 samples), "
-					  "lines drawn = %zu, triangles drawn = %zu\n",
-					t_ms_avg, 1000.0 / t_ms_avg, lines_count_global,
-					triangle_count_global), 0, 0, buffer, GREEN, 2);
-
-		text_render(string_format("wireframe = %s\n", state.wireframe ? "on" : "off"), 0, 20, buffer, GREEN, 2);
+		text_render(string_format("wireframe        = %s\n", state.wireframe ? "on" : "off"), 0, 20, buffer, GREEN, 2);
 		text_render(string_format("backface culling = %s\n", state.bfc ? "on" : "off"), 0, 40, buffer, GREEN, 2);
-
-		lines_count_global     = 0;
-		triangle_count_global = 0;
-		player_info();
+		text_render(string_format("frustum culling  = %s\n", state.vfc ? "on" : "off"), 0, 60, buffer, GREEN, 2);
+		lines_count_global     	     = 0;
+		triangle_count_global 	     = 0;
+		models_rejected_count_global = 0;
+		//player_info();
+		//camera_info_print(camera);
 	}
 }
 

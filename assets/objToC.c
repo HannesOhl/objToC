@@ -32,21 +32,21 @@ int main(int argc, char **argv) {
 	const char* dot = strrchr(argv[1], '.');
 	size_t base_len = dot ? (size_t)(dot - argv[1]) : strlen(argv[1]);
 
-	char base[256];
+	char base[512];
 	if (base_len >= sizeof(base)) base_len = sizeof(base) - 1;
 	memcpy(base, argv[1], base_len);
 	base[base_len] = '\0';
 
 	// asset and type names
-	char type_name[256];
+	char type_name[512];
 	char* base_dup = strdup(base);
 	base_dup[0] = toupper(base_dup[0]);
 	snprintf(type_name, sizeof(type_name), "Asset%s", base_dup);
 
-	char header_file[256];
+	char header_file[512];
 	snprintf(header_file, sizeof(header_file), "asset_%s.h", base);
 
-	char guard[256];
+	char guard[512];
 	make_guard(guard, sizeof(guard), base);
 
 	FILE *out_h = fopen(header_file, "w");
@@ -82,6 +82,8 @@ int main(int argc, char **argv) {
 	fprintf(out_h, "\tsize_t f_count;\n");
 	fprintf(out_h, "\tV3f v[%zu];\n", vertex_count);
 	fprintf(out_h, "\tV3u f[%zu];\n", face_count);
+	fprintf(out_h, "\tV3f min;\n");
+	fprintf(out_h, "\tV3f max;\n");
 	fprintf(out_h, "} %s;\n\n", type_name);
 
 	fprintf(out_h, "static const %s asset_%s = {\n", type_name, base);
