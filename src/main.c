@@ -381,7 +381,7 @@ double time_measure_end_ms(struct timespec* t1, const struct timespec* t0, size_
 		*samples_cur = 0;
 	}
 
-	text_render(string_format("frame time = %.2f ms, FPS = %.2f (128 samples), "
+	text_render(string_format(" frame time = %.2f ms, FPS = %.2f (128 samples), "
 				  "lines drawn = %zu, triangles drawn = %zu\n",
 				*t_ms_avg, 1000.0 / *t_ms_avg, lines_count_global,
 				triangle_count_global), 0, 0, buffer, GREEN, 2);
@@ -557,7 +557,7 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera) {
 			triangle_draw(t, buffer, camera, EMERALD);
 		}
 */
-
+/*
 		for (int i = asset_player.f_count - 1; i >= 0; i--) {
 			Triangle t = {
 				.v1 = asset_player.v[asset_player.f[i].x-1],
@@ -567,7 +567,7 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera) {
 			t = triangle_offset(t, player.position);
 			triangle_draw(t, buffer, camera, EMERALD);
 		}
-
+*/
 		/*
 		for (int i = asset_kochmuetze.f_count - 1; i >= 0; i--) {
 			Triangle t = {
@@ -578,7 +578,7 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera) {
 			triangle_draw(t, buffer, camera, EMERALD);
 		}
 		*/
-		/*
+
 		for (size_t x = 0; x < 4; x++) {
 		for (size_t z = 0; z < 4; z++) {
 			V3f offset = { .x = (float) x * 8.0f, .y = 0.0f, .z = (float) z * 8.0f };
@@ -602,7 +602,9 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera) {
 				triangle_draw(t, buffer, camera, EMERALD);
 			}
 		}}
-		*/
+		text_render(string_format(" wireframe        = %s\n", state.wireframe ? "on" : "off"), 0, 20, buffer, GREEN, 2);
+		text_render(string_format(" backface culling = %s\n", state.bfc ? "on" : "off"), 0, 40, buffer, GREEN, 2);
+		text_render(string_format(" frustum culling  = %s\n", state.vfc ? "on" : "off"), 0, 60, buffer, GREEN, 2);
 		buffer_depth_max();
 		SDL_UpdateWindowSurface(ctx->window);
 		buffer_flush(buffer, ctx->bytes_per_pixel);
@@ -611,9 +613,6 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera) {
 		// end time measuring
 		t_ms_avg_rolling += time_measure_end_ms(&t1, &t0, &samples_cur, &t_ms_avg, &t_ms_avg_rolling, buffer);
 
-		text_render(string_format("wireframe        = %s\n", state.wireframe ? "on" : "off"), 0, 20, buffer, GREEN, 2);
-		text_render(string_format("backface culling = %s\n", state.bfc ? "on" : "off"), 0, 40, buffer, GREEN, 2);
-		text_render(string_format("frustum culling  = %s\n", state.vfc ? "on" : "off"), 0, 60, buffer, GREEN, 2);
 		lines_count_global     	     = 0;
 		triangle_count_global 	     = 0;
 		models_rejected_count_global = 0;

@@ -8,6 +8,6 @@ gcc -o xsrend \
 	-Wcast-align -Wstrict-prototypes -Wwrite-strings \
 	-Wswitch-default -Winit-self -Wold-style-definition \
 	-Wno-format-truncation -Wformat \
-	-march=native -O2\
-	-g\
+	-march=native -O3\
 	-fsanitize=address\
+	#-g\
