@@ -7,7 +7,8 @@
 
 void pixel_set(uint32_t x, uint32_t y, uint32_t* buffer, uint32_t color);
 
-// stolen from raylib, but only a single global buffer
+// stolen from raylib (https://www.raylib.com)
+// but only a single global buffer (should never be twice on the stack)!
 #define MAX_TEXT_BUFFER_LENGTH 1024
 const char* string_format(const char* string, ...) {
 

@@ -114,8 +114,8 @@ Model model_assemble(const void* asset, const Texture* asset_texture) {
 		if (z < z_min) z_min = z;
 		if (z > z_max) z_max = z;
 	}
-	res.mesh->min = (V3f) {{ .x = x_min, .y = y_min, .z = z_min }};
-	res.mesh->max = (V3f) {{ .x = x_max, .y = y_max, .z = z_max }};
+	res.mesh->min = (V3f) { .x = x_min, .y = y_min, .z = z_min };
+	res.mesh->max = (V3f) { .x = x_max, .y = y_max, .z = z_max };
 
 	return res;
 }
@@ -174,7 +174,7 @@ void player_info() {
 static inline V3f world_to_view(V3f v_in, Camera c) {
 
 	V3f res   = {0};
-	V3f right = norm_3f(cross_3f(c.forward, c.up));
+	V3f right = norm(cross(c.forward, c.up));
 
 	V3f rel = {
 		.x = v_in.x - c.position.x,
@@ -370,10 +370,10 @@ void triangle_draw(Triangle t, V2f uv1, V2f uv2, V2f uv3, uint32_t* buffer, Came
 	if (t.v1.z <= znear && t.v2.z <= znear && t.v3.z <= znear) return;
 
 	// also for lighting
-	V3f n = norm_3f(cross_3f( sub_3f(t.v2, t.v1), sub_3f(t.v3, t.v1) ));
+	V3f n = norm(cross( sub(t.v2, t.v1), sub(t.v3, t.v1) ));
 	if (state.bfc) {
 		// cull backfaces
-		if ( dot_3f(t.v1, n) <= 0 ) return;
+		if ( dot(t.v1, n) <= 0 ) return;
 	}
 
 	V2s v1 = get_image_crd(t.v1, camera);
@@ -420,8 +420,8 @@ void triangle_draw(Triangle t, V2f uv1, V2f uv2, V2f uv3, uint32_t* buffer, Came
 	// get shaded color for triangle based on global light pos
 	V3f light_global_pos_w = { .x = 5.0f, .y = 5.0f, .z = 5.0f };
 	V3f light_global_pos_v = world_to_view(light_global_pos_w, camera);
-	V3f dir = norm_3f(sub_3f(t.v1, light_global_pos_v));
-	float intensity = dot_3f(dir, n);
+	V3f dir = norm(sub(t.v1, light_global_pos_v));
+	float intensity = dot(dir, n);
 	color = shade_color(color, intensity);
 
 	float denom_inv = 1.0f / denom;
@@ -487,9 +487,9 @@ void model_render_advanced(Model model, uint32_t* buffer, Camera camera,
 
 	for (size_t i = 0; i < model.mesh->f_count; i++) {
 		Triangle t = {
-			.v1 = add_3f(rot_rod_3f(rot_rod_3f(model.mesh->v[model.mesh->f[i].c1.v-1], ax1, r), ax2, r2), offset),
-			.v2 = add_3f(rot_rod_3f(rot_rod_3f(model.mesh->v[model.mesh->f[i].c2.v-1], ax1, r), ax2, r2), offset),
-			.v3 = add_3f(rot_rod_3f(rot_rod_3f(model.mesh->v[model.mesh->f[i].c3.v-1], ax1, r), ax2, r2), offset)
+			.v1 = add(rot_rod_3f(rot_rod_3f(model.mesh->v[model.mesh->f[i].c1.v-1], ax1, r), ax2, r2), offset),
+			.v2 = add(rot_rod_3f(rot_rod_3f(model.mesh->v[model.mesh->f[i].c2.v-1], ax1, r), ax2, r2), offset),
+			.v3 = add(rot_rod_3f(rot_rod_3f(model.mesh->v[model.mesh->f[i].c3.v-1], ax1, r), ax2, r2), offset)
 		};
 
 		V2f vt1 = model.mesh->vt[model.mesh->f[i].c1.vt-1];
@@ -505,9 +505,9 @@ void model_render(Model model, uint32_t* buffer, Camera camera, V3f offset) {
 
 	for (size_t i = 0; i < model.mesh->f_count; i++) {
 		Triangle t = {
-			.v1 = add_3f(model.mesh->v[model.mesh->f[i].c1.v-1], offset),
-			.v2 = add_3f(model.mesh->v[model.mesh->f[i].c2.v-1], offset),
-			.v3 = add_3f(model.mesh->v[model.mesh->f[i].c3.v-1], offset)
+			.v1 = add(model.mesh->v[model.mesh->f[i].c1.v-1], offset),
+			.v2 = add(model.mesh->v[model.mesh->f[i].c2.v-1], offset),
+			.v3 = add(model.mesh->v[model.mesh->f[i].c3.v-1], offset)
 		};
 
 		V2f vt1 = model.mesh->vt[model.mesh->f[i].c1.vt-1];
@@ -550,9 +550,9 @@ double time_measure_end_ms(struct timespec* t1, const struct timespec* t0, size_
 Triangle triangle_offset(Triangle t, V3f offset) {
 	Triangle res = {0};
 
-	res.v1 = add_3f(t.v1, offset);
-	res.v2 = add_3f(t.v2, offset);
-	res.v3 = add_3f(t.v3, offset);
+	res.v1 = add(t.v1, offset);
+	res.v2 = add(t.v2, offset);
+	res.v3 = add(t.v3, offset);
 
 	return res;
 }
@@ -622,9 +622,9 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera, Model* models)
 				if (ctx->event.key.keysym.sym == SDLK_n) {
 					rot2 = 0.0f;
 					projectile.active = !projectile.active;
-					projectile.pos = add_3f(camera.position, scal_3f(4.0f, camera.forward));
-					projectile.vel = scal_3f(0.5f, camera.forward);
-					projectile.right = norm_3f( cross_3f(camera.forward, camera.up));
+					projectile.pos = add(camera.position, scale(4.0f, camera.forward));
+					projectile.vel = scale(0.5f, camera.forward);
+					projectile.right = norm( cross(camera.forward, camera.up));
 					projectile.up = (V3f) {{ 0.0f, 1.0f, 0.0f }};
 
 				}
@@ -647,49 +647,51 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera, Model* models)
 		float mv_fac_player = 0.05f;
 
 		if (keys[SDL_SCANCODE_E]) {
-			camera.position = add_3f(camera.position, scal_3f(mv_fac, camera.forward));
+			camera.position = add(camera.position, scale(mv_fac, camera.forward));
 		}
 		if (keys[SDL_SCANCODE_UP]) {
-			player.position = add_3f(player.position, scal_3f(mv_fac_player, player.forward));
+			player.position = add(player.position, scale(mv_fac_player, player.forward));
 		}
 
 		if (keys[SDL_SCANCODE_D]) {
 			V3f dir = { .x = camera.forward.x, .y = 0.0f, .z = camera.forward.z };
-			dir = norm_3f(dir);
-			camera.position = sub_3f(camera.position, scal_3f(mv_fac, dir));
+			dir = norm(dir);
+			camera.position = sub(camera.position, scale(mv_fac, dir));
 		}
 		if (keys[SDL_SCANCODE_DOWN]) {
 			V3f dir = { .x = player.forward.x, .y = 0.0f, .z = player.forward.z };
-			dir = norm_3f(dir);
-			player.position = sub_3f(player.position, scal_3f(mv_fac_player, dir));
+			dir = norm(dir);
+			player.position = sub(player.position, scale(mv_fac_player, dir));
 		}
 
 		if (keys[SDL_SCANCODE_S]) {
-			V3f dir = norm_3f(cross_3f(camera.up, camera.forward));
-			camera.position = add_3f(camera.position, scal_3f(mv_fac, dir));
+			V3f dir = norm(cross(camera.up, camera.forward));
+			camera.position = add(camera.position, scale(mv_fac, dir));
 		}
 		if (keys[SDL_SCANCODE_LEFT]) {
 			V3f up  = { .x = 0.0f, .y = 1.0f, .z = 0.0f };
-			V3f dir = norm_3f(cross_3f(up, player.forward));
-			player.position = add_3f(player.position, scal_3f(mv_fac_player, dir));
+			V3f dir = norm(cross(up, player.forward));
+			player.position = add(player.position, scale(mv_fac_player, dir));
 		}
 
 		if (keys[SDL_SCANCODE_F]) {
-			V3f dir = norm_3f(cross_3f(camera.forward, camera.up));
-			camera.position = add_3f(camera.position, scal_3f(mv_fac, dir));
+			V3f dir = norm(cross(camera.forward, camera.up));
+			camera.position = add(camera.position, scale(mv_fac, dir));
 		}
 		if (keys[SDL_SCANCODE_RIGHT]) {
 			V3f up  = { .x = 0.0f, .y = 1.0f, .z = 0.0f };
-			V3f dir = norm_3f(cross_3f(player.forward, up));
-			player.position = add_3f(player.position, scal_3f(mv_fac_player, dir));
+			V3f dir = norm(cross(player.forward, up));
+			player.position = add(player.position, scale(mv_fac_player, dir));
 		}
 
 		if (keys[SDL_SCANCODE_SPACE]) {
-			camera.position = add_3f(camera.position, scal_3f(mv_fac, (V3f) {{ 0.0f, 1.0f, 0.0f }} ));
+			V3f v = { .x = 0.0f, .y = 1.0f, .z = 0.0f };
+			camera.position = add( camera.position, scale(mv_fac, v) );
 		}
 
 		if (keys[SDL_SCANCODE_LSHIFT]) {
-			camera.position = add_3f(camera.position, scal_3f(mv_fac, (V3f) {{ 0.0f, -1.0f, 0.0f }} ));
+			V3f v = { .x = 0.0f, .y = -1.0f, .z = 0.0f };
+			camera.position = add( camera.position, scale(mv_fac, v) );
 		}
 
 		if (state.grd) grid_draw(buffer, camera);
@@ -697,13 +699,13 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera, Model* models)
 		if (projectile.active) {
 
 			rot2 += 0.01f;
-			V2f n = {{ .x = projectile.right.x, .y = projectile.right.z }};
-			n = norm_2f(n);
+			V2f n = { .x = projectile.right.x, .y = projectile.right.z };
+			n = norm(n);
 			float rot = atan2f(n.x, n.y);
 
 			model_render_advanced(models[3], buffer, camera,
 					projectile.pos, projectile.up, rot, projectile.right, rot2);
-			projectile.pos = add_3f(projectile.pos, scal_3f(0.0f, projectile.vel));
+			projectile.pos = add(projectile.pos, scale(0.0f, projectile.vel));
 		}
 
 
@@ -748,6 +750,11 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera, Model* models)
 }
 
 int main(void) {
+
+	V3f a = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
+	float s = 0.5f;
+	V3f r = scale(s, a);
+	printf("x = %f, y = %f, z = %f\n", a.x, a.y, a.z);
 
 	buffer_depth = calloc((size_t) SCREEN_WIDTH*SCREEN_HEIGHT,
 			      (size_t) sizeof *buffer_depth);
