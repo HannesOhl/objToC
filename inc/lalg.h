@@ -1,5 +1,10 @@
-#ifndef _LALG_H
-#define _LALG_H
+// TODO: 1) finish unit tests
+//	 2) some calculations dont make
+// 	    sense for given input types, check that
+//       3)
+
+#ifndef LALG_H
+#define LALG_H
 #include <stdint.h>
 #include <math.h>
 #include <stddef.h>
@@ -169,6 +174,14 @@ static inline V3f scale_3f(float fac, V3f a) {
 		V3f: scale_3f	\
 	)((a), (b))
 
+// vectors: intersection of line segment
+static inline V3f intersect_z(V3f a, V3f b, float z) {
+	float dz = b.z - a.z;
+	if (dz*dz < 1e-8f) return a;
+	float lambda = (z - a.z) / dz;
+	return (V3f) {{ a.x + lambda * (b.x - a.x), a.y + lambda * (b.y - a.y), z }};
+}
+
 // matrices: types
 typedef union {
 	struct {
@@ -187,7 +200,7 @@ typedef union {
 	float arr[9];
 } M3f;
 
-// matrices: multplication
+// matrices: multplication matrix-vector and matrix-matrix
 static inline V3u mul_m3u_v3u(M3u m, V3u a) {
 	return (V3u) {{ m.arr[0]*a.arr[0] + m.arr[3]*a.arr[1] + m.arr[6]*a.arr[2],
 			m.arr[1]*a.arr[0] + m.arr[4]*a.arr[1] + m.arr[7]*a.arr[2],
@@ -230,61 +243,6 @@ static inline M3f mul_m3f_m3f(M3f m, M3f n) {
 		)				\
 	)((a), (b));
 
-// calculations
-
-typedef struct {
-	V3f v1;
-	V3f v2;
-	V3f v3;
-} Triangle;
-
-
-static inline V3f intersect_z(V3f a, V3f b, float z) {
-
-	V3f res = {0};
-
-	float dz = b.z - a.z;
-	if (dz*dz < 1e-8f) return a;
-
-	float lambda = (z - a.z) / dz;
-
-	res.x = a.x + lambda * (b.x - a.x);
-	res.y = a.y + lambda * (b.y - a.y);
-	res.z = z;
-
-	return res;
-}
-
-static inline V2s intersect_x(V2s a, V2s b, int32_t x) {
-
-	V2s res = {0};
-
-	float dx = (float)b.x - (float)a.x;
-	if (dx*dx < 1e-8f) return a;
-
-	float lambda = ((float)x - (float)a.x) / dx;
-
-	res.x = x;
-	res.y = a.y + (int32_t)(lambda * ((float)b.y - (float)a.y));
-
-	return res;
-}
-
-static inline V2s intersect_y(V2s a, V2s b, int32_t y) {
-
-	V2s res = {0};
-
-	float dy = (float)b.y - (float)a.y;
-	if (dy*dy < 1e-8f) return a;
-
-	float lambda = ((float)y - (float)a.y) / dy;
-
-	res.x = a.x + (int32_t)(lambda * ((float)b.x - (float)a.x));
-	res.y = y;
-
-	return res;
-}
-
 static inline V3f rot_rod_3f(V3f vector, V3f axis, float angle) {
 
 	V3f res = {0};
@@ -292,14 +250,87 @@ static inline V3f rot_rod_3f(V3f vector, V3f axis, float angle) {
 	float cosine = cosf(angle);
 	float sine   = sinf(angle);
 
-	res = add_3f(add_3f(scale(cosine, vector), scale(sine, cross_3f(axis, vector))), scale((1.0f-cosine)*dot_3f(axis, vector), axis));
+	res = add( add(scale(cosine, vector), scale(sine, cross(axis, vector))),
+		   scale((1.0f-cosine) * dot(axis, vector), axis) );
 
 	return res;
 }
 
+// other types
+typedef struct {
+	V3f v1;
+	V3f v2;
+	V3f v3;
+} Triangle;
+
+// other utilities
 static inline float maxf(float value, float max) {
 
 	return value < max ? max : value;
 }
-#endif
+
+#ifdef UNIT_TEST
+
+#include <assert.h>
+
+#define TYPE_CHECK(expression, T) _Generic((expression), T: true, default: false)
+
+V3u TEST_u1 = { .x =   1u, .y =   2u, .z =   3u };
+V3u TEST_u2 = { .x =   1u, .y =   2u, .z =   3u };
+V3s TEST_s1 = { .x =   -1, .y =   -2, .z =   -3 };
+V3s TEST_s2 = { .x =   -1, .y =   -2, .z =   -3 };
+V3f TEST_f1 = { .x = 0.1f, .y = 0.2f, .z = 0.3f };
+V3f TEST_f2 = { .x = 0.4f, .y = 0.5f, .z = 0.6f };
+
+// begin with asserting return types
+static_assert(TYPE_CHECK( add(TEST_u1, TEST_u2), V3u), "");
+static_assert(TYPE_CHECK( add(TEST_s1, TEST_s2), V3s), "");
+static_assert(TYPE_CHECK( add(TEST_f1, TEST_f2), V3f), "");
+
+static_assert(TYPE_CHECK( sub(TEST_u1, TEST_u2), V3u), "");
+static_assert(TYPE_CHECK( sub(TEST_s1, TEST_s2), V3s), "");
+static_assert(TYPE_CHECK( sub(TEST_f1, TEST_f2), V3f), "");
+
+static_assert(TYPE_CHECK( dot(TEST_u1, TEST_u2), uint32_t), "");
+static_assert(TYPE_CHECK( dot(TEST_s1, TEST_s2),  int32_t), "");
+static_assert(TYPE_CHECK( dot(TEST_f1, TEST_f2),    float), "");
+
+static_assert(TYPE_CHECK( cross(TEST_u1, TEST_u2), V3u), "");
+static_assert(TYPE_CHECK( cross(TEST_s1, TEST_s2), V3s), "");
+static_assert(TYPE_CHECK( cross(TEST_f1, TEST_f2), V3f), "");
+
+static_assert(TYPE_CHECK( norm(TEST_f1), V3f), "");
+
+static bool LALG_test_add() {
+
+	fprintf(stdout, "\tadd:\n");
+
+	V3u res_u = add(TEST_u1, TEST_u2);
+	assert(res_u.x == 2u && res_u.y == 4u && res_u.z == 6u);
+	fprintf(stdout, "\t\tV3u passed!\n");
+
+	V3s res_s = add(TEST_s1, TEST_s2);
+	assert(res_s.x == -2 && res_s.y == -4 && res_s.z == -6);
+	fprintf(stdout, "\t\tV3s passed!\n");
+
+	float EPS = 1e-6f;
+	V3f res_f = add(TEST_f1, TEST_f2);
+	assert( fabsf(res_f.x-0.5f) < EPS &&
+		fabsf(res_f.y-0.7f) < EPS &&
+		fabsf(res_f.z-0.9f) < EPS);
+	fprintf(stdout, "\t\tV3f passed!\n");
+
+	return true;
+}
+
+static bool LALG_tests_run() {
+
+	fprintf(stdout, "running all lalg.h unit tests:\n");
+	LALG_test_add();
+	return true;
+}
+
+#endif // UNIT_TEST
+
+#endif // LALG_H
 

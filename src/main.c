@@ -5,6 +5,7 @@
 #include <time.h>
 #include <arpa/inet.h>
 
+#define UNIT_TEST
 #include "../inc/lalg.h"
 #include "../inc/camera.h"
 #include "../inc/text.h"
@@ -751,10 +752,12 @@ void event_loop(SDLContext* ctx, uint32_t* buffer, Camera camera, Model* models)
 
 int main(void) {
 
-	V3f a = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
-	float s = 0.5f;
-	V3f r = scale(s, a);
-	printf("x = %f, y = %f, z = %f\n", a.x, a.y, a.z);
+	#ifdef UNIT_TEST
+		if (!LALG_tests_run()) {
+			fprintf(stderr, "lalg tests failed!\n");
+			exit(-1);
+		}
+	#endif
 
 	buffer_depth = calloc((size_t) SCREEN_WIDTH*SCREEN_HEIGHT,
 			      (size_t) sizeof *buffer_depth);
