@@ -1,4 +1,3 @@
-
 srend:
 	- translate vertices, not triangles 		(!!!)
 	- cleaner mesh type, instead of AssetModel	(!!)
@@ -15,3 +14,10 @@ objToC:
 	- make it generally safer, allowing different	(!!)
 	  face-layouts
 	- support arbitrary number of verts per face 	(!)
+
+general:
+	- add Makefile with asset compilation option 	(!!!)
+
+
+git push pngToBin-remote pngToBin-branch:main
+git push   objToC-remote   objToC-branch:main
