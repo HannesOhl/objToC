@@ -1,6 +1,7 @@
-// TODO: currently works only in same folder:
-// 	1) put out_h into same dir as in_obj.
-// 	2) maybe allow to provide output dir.
+// TODO: i) currently works only in same folder:
+// 		1) put out_h into same dir as in_obj.
+// 		2) maybe allow to provide output dir.
+// 	ii) add error handling
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,6 +41,38 @@ void die(const char *fmt, ...) {
 	}
 
 	exit(EXIT_FAILURE);
+}
+
+void counts_calculate(FILE* in_obj, size_t* v_count, size_t* vt_count, size_t* vn_count, size_t* f_count);
+
+	char* line = NULL;
+	size_t len = 0;
+
+	while ( getline(&line, &len, in_obj) != -1 ) {
+
+		strtok(line, " ");
+		switch (token_kind(line)) {
+
+		case TOKEN_V:
+			*v_count += 1;
+			break;
+		case TOKEN_VT:
+			*vt_count += 1;
+			break;
+		case TOKEN_VN:
+			*vn_count += 1;
+			break;
+		case TOKEN_F:
+			*f_count += 1;
+			break;
+		}
+	}
+
+	if (*vt_count == 0 || *vn_count == 0) {
+		die("Currently only textured models with triangular faces of the form\n"
+		    "\t f a/b/c d/e/f g/h/i\n"
+		    "are supported");
+	}
 }
 
 void header_print(FILE* out_h, const char* out_name,
@@ -162,35 +195,7 @@ int main(int argc, char** argv) {
 	size_t vt_count = 0;
 	size_t vn_count = 0;
 	size_t f_count  = 0;
-
-	char* line = NULL;
-	size_t len = 0;
-
-	while ( getline(&line, &len, in_obj) != -1 ) {
-
-		strtok(line, " ");
-		switch (token_kind(line)) {
-
-		case TOKEN_V:
-			v_count += 1;
-			break;
-		case TOKEN_F:
-			f_count += 1;
-			break;
-		case TOKEN_VT:
-			vt_count += 1;
-			break;
-		case TOKEN_VN:
-			vn_count += 1;
-			break;
-		}
-	}
-
-	if (vt_count == 0 || vn_count == 0) {
-		die("Currently only textured models with triangular faces of the form\n"
-		    "\t f a/b/c d/e/f g/h/i\n"
-		    "are supported");
-	}
+	counts_calculate(&v_count, &vt_count, &vn_count, &f_count);
 
 	float* v  = calloc((size_t) (3 *  v_count), (size_t) sizeof *v );
 	float* vt = calloc((size_t) (3 * vt_count), (size_t) sizeof *vt);
