@@ -7,6 +7,9 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <unistd.h>
+
+static char* pname;
 
 #define TOKEN_LIST(x) 	\
 	X(V ,  "v") 	\
@@ -181,14 +184,59 @@ void faces_print(FILE* out_h, size_t f_count, long* f) {
 	fprintf(out_h, "\t}\n");
 }
 
+#define BUF_MAX 1024
+
+void make_base_path(char* arg, char* base_path) {
+
+	const char* sls = strrchr(arg, '/');
+	size_t len = sls ? (size_t) (sls - arg) + 1
+			 : (size_t) 0;
+
+	memcpy(base_path, arg, len);
+	base_path[len] = '\0';
+}
+
+void make_base_name(char* arg, char* base_stripped) {
+
+	const char* sls = strrchr(arg, '/');
+	const char* base = sls ? sls + 1
+			       : arg;
+
+	const char* ext = strrchr(base, '.');
+	size_t base_len = ext ? (size_t) (ext - base)
+		              : (size_t) strlen(base);
+
+	memcpy(base_stripped, base, base_len);
+	base_stripped[base_len] = '\0';
+}
+
+void usage() {
+	die("usage: %s input.obj [-o output-file]\n", pname);
+}
 
 int main(int argc, char** argv) {
 
+	pname = argv[0];
+	if (argc < 2) usage();
+
 	FILE* in_obj = fopen(argv[1], "r");
 	if (!in_obj) {
-		perror("fopen input");
+		perror("Error opening file");
 		return EXIT_FAILURE;
 	}
+
+	printf("arg = %s\n", argv[1]);
+	char base_name[BUF_MAX];
+	make_base_name(argv[1], base_name);
+	printf("base_name = %s\n", base_name);
+
+	char base_path[BUF_MAX];
+	make_base_path(argv[1], base_path);
+	printf("base_path = %s\n", base_path);
+
+	char out_path[BUF_MAX];
+	snprintf(out_path, sizeof(out_path), "%smesh_%s.h", base_path, base_name);
+	FILE* out_h = fopen(out_path, "w");
 
 	// first pass: get counts
 	size_t v_count  = 0;
@@ -274,21 +322,8 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	char out_name[256];
-	const char* ext = strrchr(argv[1], '.');
-	size_t base_len = ext ? (size_t) (ext - argv[1])
-		              : (size_t) strlen(argv[1]);
-	if (base_len >= sizeof(out_name)) base_len = sizeof(out_name) - 1;
-
-	memcpy(out_name, argv[1], base_len);
-	out_name[base_len] = '\0';
-
-	char out_path[256];
-	snprintf(out_path, sizeof(out_path), "mesh_%s.h", out_name);
-	FILE* out_h = fopen(out_path, "w");
-
 	// begin: writing the output file
-	header_print(out_h, out_name, v_count, vt_count, vn_count, f_count);
+	header_print(out_h, base_name, v_count, vt_count, vn_count, f_count);
 	vertices_print(out_h, v_count, v);
 	texture_coordinates_print(out_h, vt_count, vt);
 	vertex_normals_print(out_h, vn_count, vn);
