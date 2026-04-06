@@ -43,7 +43,7 @@ void die(const char *fmt, ...) {
 	exit(EXIT_FAILURE);
 }
 
-void counts_calculate(FILE* in_obj, size_t* v_count, size_t* vt_count, size_t* vn_count, size_t* f_count);
+void counts_calculate(FILE* in_obj, size_t* v_count, size_t* vt_count, size_t* vn_count, size_t* f_count) {
 
 	char* line = NULL;
 	size_t len = 0;
@@ -195,7 +195,7 @@ int main(int argc, char** argv) {
 	size_t vt_count = 0;
 	size_t vn_count = 0;
 	size_t f_count  = 0;
-	counts_calculate(&v_count, &vt_count, &vn_count, &f_count);
+	counts_calculate(in_obj, &v_count, &vt_count, &vn_count, &f_count);
 
 	float* v  = calloc((size_t) (3 *  v_count), (size_t) sizeof *v );
 	float* vt = calloc((size_t) (3 * vt_count), (size_t) sizeof *vt);
@@ -208,6 +208,10 @@ int main(int argc, char** argv) {
 	size_t vt_cur = 0;
 	size_t vn_cur = 0;
 	size_t  f_cur = 0;
+
+	char* line = NULL;
+	size_t len = 0;
+
 	while ( getline(&line, &len, in_obj) != -1 ) {
 
 		strtok(line, " ");
