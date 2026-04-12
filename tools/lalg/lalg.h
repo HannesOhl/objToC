@@ -1,7 +1,4 @@
 // TODO: 1) finish unit tests
-//	 2) some calculations dont make
-// 	    sense for given input types, check that
-//       3)
 
 #ifndef LALG_H
 #define LALG_H
