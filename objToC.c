@@ -1,6 +1,7 @@
-// TODO: 
+// TODO:
 // 	i) add error handling
-//  ii) mesh only version? 
+//  ii) mesh only version?
+//  iii) gen. polygons
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
