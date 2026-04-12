@@ -2,7 +2,6 @@
 // 	i) add error handling
 //  ii) mesh only version?
 //  iii) gen. polygons
-// test
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
