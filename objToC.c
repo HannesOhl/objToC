@@ -1,7 +1,5 @@
-// TODO: i) currently works only in same folder:
-// 		1) put out_h into same dir as in_obj.
-// 		2) maybe allow to provide output dir.
-// 	ii) add error handling
+// TODO: 
+// 	i) add error handling
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
