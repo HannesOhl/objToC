@@ -1,5 +1,6 @@
 // TODO: 
 // 	i) add error handling
+//  ii) mesh only version? 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
