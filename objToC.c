@@ -1,6 +1,6 @@
 // TODO:
-// 	i) add error handling
-//  ii) mesh only version?
+//    i) add error handling
+//   ii) mesh only version?
 //  iii) gen. polygons
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +10,29 @@
 #include <unistd.h>
 
 static char* pname;
+
+typedef struct {
+	bool o_flg;
+	char o_arg[BUF_MAX];
+} Options;
+Options opt = {
+	.o_flg = false
+};
+
+void die(const char *fmt, ...) {
+	va_list ap;
+	va_start(ap, fmt);
+	if (fmt) vfprintf(stderr, fmt, ap);
+	if (!fmt) fprintf(stderr, "Unknown error.\n");
+	va_end(ap);
+
+	if (fmt[0] && fmt[strlen(fmt)-1] == ':') {
+		fputc(' ', stderr);
+		perror(NULL);
+	}
+
+	exit(EXIT_FAILURE);
+}
 
 #define TOKEN_LIST(x) 	\
 	X(V ,  "v") 	\
@@ -29,21 +52,6 @@ TokenKind token_kind(const char* s) {
 	TOKEN_LIST(X)
 	#undef X
 	return TOKEN_UNDEFINED;
-}
-
-void die(const char *fmt, ...) {
-	va_list ap;
-	va_start(ap, fmt);
-	if (fmt) vfprintf(stderr, fmt, ap);
-	if (!fmt) fprintf(stderr, "Unknown error.\n");
-	va_end(ap);
-
-	if (fmt[0] && fmt[strlen(fmt)-1] == ':') {
-		fputc(' ', stderr);
-		perror(NULL);
-	}
-
-	exit(EXIT_FAILURE);
 }
 
 void counts_calculate(FILE* in_obj, size_t* v_count, size_t* vt_count, size_t* vn_count, size_t* f_count) {
@@ -213,14 +221,6 @@ void make_base_name(char* arg, char* base_stripped) {
 void usage() {
 	die("usage: %s input.obj [-o output-file]\n", pname);
 }
-
-typedef struct {
-	bool o_flg;
-	char o_arg[BUF_MAX];
-} Options;
-Options opt = {
-	.o_flg = false
-};
 
 int main(int argc, char** argv) {
 
