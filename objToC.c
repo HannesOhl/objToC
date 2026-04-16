@@ -9,15 +9,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 
-static char* pname;
-
-typedef struct {
-	bool o_flg;
-	char o_arg[BUF_MAX];
-} Options;
-Options opt = {
-	.o_flg = false
-};
+#define BUF_MAX 1024
 
 void die(const char *fmt, ...) {
 	va_list ap;
@@ -32,6 +24,44 @@ void die(const char *fmt, ...) {
 	}
 
 	exit(EXIT_FAILURE);
+}
+
+static char* pname;
+
+typedef struct {
+	bool o_flg;
+	char o_arg[BUF_MAX];
+} Options;
+Options opt = {
+	.o_flg = false
+};
+
+void usage() {
+	die("usage: %s input.obj [-o output-file]\n", pname);
+}
+
+void make_base_name(char* arg, char* base_stripped) {
+
+	const char* sls = strrchr(arg, '/');
+	const char* base = sls ? sls + 1
+			       : arg;
+
+	const char* ext = strrchr(base, '.');
+	size_t base_len = ext ? (size_t) (ext - base)
+		              : (size_t) strlen(base);
+
+	memcpy(base_stripped, base, base_len);
+	base_stripped[base_len] = '\0';
+}
+
+void make_base_path(char* arg, char* base_path) {
+
+	const char* sls = strrchr(arg, '/');
+	size_t len = sls ? (size_t) (sls - arg) + 1
+			 : (size_t) 0;
+
+	memcpy(base_path, arg, len);
+	base_path[len] = '\0';
 }
 
 #define TOKEN_LIST(x) 	\
@@ -190,36 +220,6 @@ void faces_print(FILE* out_h, size_t f_count, long* f) {
 			f[f_cur+3], f[f_cur+4], f[f_cur+5],
 			f[f_cur+6], f[f_cur+7], f[f_cur+8]);
 	fprintf(out_h, "\t}\n");
-}
-
-#define BUF_MAX 1024
-
-void make_base_path(char* arg, char* base_path) {
-
-	const char* sls = strrchr(arg, '/');
-	size_t len = sls ? (size_t) (sls - arg) + 1
-			 : (size_t) 0;
-
-	memcpy(base_path, arg, len);
-	base_path[len] = '\0';
-}
-
-void make_base_name(char* arg, char* base_stripped) {
-
-	const char* sls = strrchr(arg, '/');
-	const char* base = sls ? sls + 1
-			       : arg;
-
-	const char* ext = strrchr(base, '.');
-	size_t base_len = ext ? (size_t) (ext - base)
-		              : (size_t) strlen(base);
-
-	memcpy(base_stripped, base, base_len);
-	base_stripped[base_len] = '\0';
-}
-
-void usage() {
-	die("usage: %s input.obj [-o output-file]\n", pname);
 }
 
 int main(int argc, char** argv) {
